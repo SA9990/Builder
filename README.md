@@ -10,4 +10,5 @@
 | `config`       | Path to the kernel defconfig within the source repo                        |
 | `LocalVersion` | Sets `CONFIG_LOCALVERSION` (e.g., `-custom`)                               |
 | `cmd`          | Additional `make` flags (e.g., `V=1`)                                      |
+| `ksu`          | Enable KernelSU if required                                                |
 ---
