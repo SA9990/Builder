@@ -1,0 +1,220 @@
+name: Kernel_Builder
+
+on:
+  workflow_dispatch:
+    inputs:
+      user:
+        description: "👨‍💻 Repository_Owner"
+        required: true
+        default: "sa9990"
+        type: string
+      repo:
+        description: "🏠 Repository"
+        required: true
+        default: "Source"
+        type: string
+      branch:
+        description: "⚙️ Branch"
+        required: true
+        default: "waterlily"
+        type: string
+      clang_type:
+        description: "🛠️ Clang_Type (aosp or neutron)"
+        required: true
+        default: "neutron"
+        type: choice
+        options:
+          - aosp
+          - neutron
+      clang_url:
+        description: "🔗 AOSP Clang URL (if using aosp)"
+        required: false
+        default: ""
+        type: string
+      config:
+        description: "📄 Device_Defconfig"
+        required: true
+        default: "vendor/obiwan_defconfig"
+        type: string
+      ksu:
+        description: "⚠️ Integrate KernelSU"
+        required: false
+        default: false
+        type: choice
+        options:
+          - "true"
+          - "false"
+      LocalVersion:
+        description: "📄 Set custom localversion"
+        required: false
+        type: string
+      cmd:
+        description: "📜 Extra_Make_cmd"
+        required: false
+        default: "-s"
+        type: string
+      dotconfig:
+        description: "extra config file as .config"
+        required: false
+        default: ""
+        type: string
+
+env:
+  TZ: Asia/Kolkata
+  GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+  DEVICE: Obiwan
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions: write-all
+
+    steps:
+      - name: Install Build Dependencies
+        run: |
+          echo "🔧 Installing dependencies..."
+          sudo apt update > /dev/null 2>&1
+          sudo apt update -qq && sudo apt install -y git build-essential bc bison flex lzop zip unzip curl libssl-dev zlib1g-dev liblz4-tool device-tree-compiler python3
+      - name: Checkout Kernel Source
+        uses: actions/checkout@v5.0.0
+        with:
+          token: ${{ secrets.GH_PAT }}
+          repository: ${{ inputs.user }}/${{ inputs.repo }}
+          ref: ${{ inputs.branch }}
+          path: ${{ inputs.repo }}
+          fetch-depth: 1
+
+      - name: Set up Toolchain
+        run: |
+          echo "🧰 Setting up toolchain..."
+          TOOLCHAIN_DIR="$HOME/toolchains"
+          mkdir -p "$TOOLCHAIN_DIR"
+
+          if [[ "${{ inputs.clang_type }}" == "aosp" ]]; then
+            echo "Using AOSP Clang"
+            mkdir -p "$TOOLCHAIN_DIR/aosp-clang"
+            cd "$TOOLCHAIN_DIR/aosp-clang"
+            curl -L -s "${{ inputs.clang_url }}" -o clang.tar.gz && echo "✅ AOSP Clang downloaded"
+            tar -xzf clang.tar.gz && echo "✅ AOSP Clang extracted"
+            echo "TOOLCHAIN_PATH=$TOOLCHAIN_DIR/aosp-clang/bin" >> $GITHUB_ENV
+            echo "TOOLCHAIN_NAME=AOSP" >> $GITHUB_ENV
+          else
+            echo "Using Neutron Clang"
+            mkdir -p "$TOOLCHAIN_DIR/neutron-clang"
+            cd "$TOOLCHAIN_DIR/neutron-clang"
+            curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman" && echo "✅ antman downloaded"
+            chmod +x antman
+            ./antman -S && echo "✅ Neutron toolchain"
+            echo "TOOLCHAIN_PATH=$TOOLCHAIN_DIR/neutron-clang/bin" >> $GITHUB_ENV
+            echo "TOOLCHAIN_NAME=Neutron" >> $GITHUB_ENV
+          fi
+
+      - name: Set localversion into kernel config
+        working-directory: ${{ inputs.repo }}
+        run: |
+          echo "🔧 Setting localversion..."
+          if [[ ! -z "${{ inputs.LocalVersion }}" ]]; then
+            sed -i '\#CONFIG_LOCALVERSION#d' arch/arm64/configs/${{ inputs.config }} && echo "✅ Removed old CONFIG_LOCALVERSION"
+            echo >> arch/arm64/configs/${{ inputs.config }}
+            echo 'CONFIG_LOCALVERSION_AUTO=n' >> arch/arm64/configs/${{ inputs.config }}
+            echo 'CONFIG_LOCALVERSION="${{ inputs.LocalVersion }}"' >> arch/arm64/configs/${{ inputs.config }} && echo "✅ Set new localversion"
+          else
+            sed -i '\#CONFIG_LOCALVERSION#d' arch/arm64/configs/${{ inputs.config }}
+            echo 'CONFIG_LOCALVERSION_AUTO=n' >> arch/arm64/configs/${{ inputs.config }} && echo "✅ Disabled localversion auto"
+          fi
+
+      - name: Integrate KernelSU
+        working-directory: ${{ inputs.repo }}
+        run: |
+          if [[ "${{ inputs.ksu }}" == "true" ]]; then
+            echo "🔧 Applying KernelSU integration..."
+            git clone https://github.com/SA9990/KernelSU_Patch.git patcher && echo "✅ Patch repo cloned"
+            git apply patcher/kernelsu.patch && echo "✅ Patch applied"
+            rm -rf drivers/kernelsu && echo "✅ Old KernelSU directory removed"
+            git clone https://github.com/rsuntk/KernelSU.git && echo "✅ KernelSU source cloned"
+            mv KernelSU/kernel drivers/kernelsu && echo "✅ Moved kernel source to drivers/kernelsu"
+            cd KernelSU
+            export KSU_GIT_VERSION=$(git rev-list --count HEAD) && echo "✅ Fetched KernelSU version: $KSU_GIT_VERSION"
+            echo "KSU=$((KSU_GIT_VERSION))" >> $GITHUB_ENV
+            cd ..
+            sed -i '32,64d' drivers/kernelsu/Makefile && echo "✅ Cleaned old versioning lines"
+            echo KSU_GIT_VERSION := $KSU_GIT_VERSION >> drivers/kernelsu/Makefile
+            echo '$(eval KSU_VERSION=$(shell expr 20000 + $(KSU_GIT_VERSION)))' >> drivers/kernelsu/Makefile
+            echo '$(info -- KernelSU version: $(KSU_VERSION))' >> drivers/kernelsu/Makefile
+            echo 'ccflags-y += -DKSU_VERSION=$(KSU_VERSION)' >> drivers/kernelsu/Makefile
+            sed -i '\#endmenu#d' drivers/Kconfig && echo "✅ Modified Kconfig"
+            echo >> drivers/Kconfig
+            echo 'source "drivers/kernelsu/Kconfig"' >> drivers/Kconfig
+            echo >> drivers/Kconfig
+            echo 'endmenu' >> drivers/Kconfig
+            echo 'obj-$(CONFIG_KSU) += kernelsu/' >> drivers/Makefile
+            echo 'CONFIG_KSU=y' >> arch/arm64/configs/${{ inputs.config }} && echo "✅ Enabled KSU in defconfig"
+            rm -rf KernelSU p && echo "🧹 Cleaned up temporary files"
+            echo "✅ KernelSU integrated"
+          else
+            echo "⚠️ Skipping KernelSU integration."
+            rm -rf drivers/kernelsu
+            sed -i '\#source "drivers/kernelsu/Kconfig"#d' drivers/Kconfig
+            sed -i '\#endmenu#d' drivers/Kconfig
+            echo >> drivers/Kconfig
+            echo 'endmenu' >> drivers/Kconfig
+            sed -i '/obj-$(CONFIG_KSU) += kernelsu\//d' drivers/Makefile
+            echo "✅ Cleaned up KernelSU remnants (if any)"
+          fi
+
+      - name: Configure and Build Kernel
+        working-directory: ${{ inputs.repo }}
+        run: |
+          echo "🧱 Building kernel..."
+          export PATH="${{ env.TOOLCHAIN_PATH }}:$PATH"
+          make distclean
+          make -j$(nproc --all) O=out ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 ${{ inputs.cmd }} ${{ inputs.config }} ${{ inputs.dotconfig }}
+          make -j$(nproc --all) O=out ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 ${{ inputs.cmd }} all && echo "✅ Kernel compiled"
+
+      - name: Generate Defconfig
+        working-directory: ${{ inputs.repo }}
+        run: |
+          mv out/.config out/${{ env.DEVICE }}.txt && echo "✅ Saved defconfig"
+
+      - name: Merge DTBs
+        working-directory: ${{ inputs.repo }}
+        run: |
+          find out/arch/arm64/boot/dts/vendor -name '*.dtb' -exec cat {} + > out/arch/arm64/boot/dtb && echo "✅ DTBs merged"
+
+      - name: Set Build Timestamp
+        run: |
+          echo "IST_TIME=$(date +"%Y-%m-%d_%H-%M")" >> $GITHUB_ENV && echo "✅ Timestamp set"
+
+      - name: Package with AnyKernel3
+        run: |
+          echo "📦 Packaging with AnyKernel3..."
+          export TZ=Asia/Kolkata
+          IST_TIME=$(date +"%Y-%m-%d_%H-%M")
+          ZIP_NAME="${IST_TIME}_${{ env.KSU }}.zip"
+          echo "$ZIP_NAME" > zip_name.txt
+
+          git clone https://github.com/SA9990/AK3_obiwan.git && echo "✅ Cloned AnyKernel3"
+          cp ${{ inputs.repo }}/out/arch/arm64/boot/Image AK3_obiwan/ && echo "✅ Copied Image"
+          cp ${{ inputs.repo }}/out/arch/arm64/boot/dtb AK3_obiwan/ && echo "✅ Copied DTB"
+          find ${{ inputs.repo }}/out/ -type f -name "*.ko" -exec cp {} AK3_obiwan/modules/system/lib/modules/ \; || true && echo "✅ Copied modules"
+          find ${{ inputs.repo }}/out/ -type f -name "dtbo.img" -exec cp {} AK3_obiwan/ \; || true
+          cd AK3_obiwan
+          zip -r9 "../$ZIP_NAME" * -x .git README.md *placeholder && echo "✅ AnyKernel3 packaged"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2.4.1
+        with:
+          tag_name: "${{ inputs.repo }}_${{ inputs.branch }}_${{ env.KSU }}"
+          name: "${{ env.DEVICE }}_${{ env.IST_TIME }}"
+          body: |
+            - 🗓️ **Build Date:** `${{ env.IST_TIME }}`
+            - 📱 **Device:** `${{ env.DEVICE }}`
+            - 👤 **Maintainer:** `${{ inputs.user }}`
+            - 📁 **Repo:** `${{ inputs.repo }}`
+            - 🌿 **Branch:** `${{ inputs.branch }}`
+            - 🛠️ **Toolchain:** `${{ env.TOOLCHAIN_NAME }}`
+            - 🧩 **KernelSU:** `${{ env.KSU }}`
+            - ⚙️ **Defconfig:** `${{ inputs.config }}`
+          files: |
+            ${{ github.workspace }}/*.zip
+            ${{ github.workspace }}/${{ inputs.repo }}/out/${{ env.DEVICE }}.txt
