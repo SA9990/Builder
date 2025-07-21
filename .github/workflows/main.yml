@@ -1,0 +1,222 @@
+name: Kernel_Builder
+
+on:
+  workflow_dispatch:
+    inputs:
+      user:
+        description: "👨‍💻 Repository_Owner"
+        required: true
+        default: "sa9990"
+        type: string
+      repo:
+        description: "🏠 Repository"
+        required: true
+        default: "Source"
+        type: string
+      branch:
+        description: "⚙️ Branch"
+        required: true
+        default: "y"
+        type: string
+      clang_type:
+        description: "🛠️ Clang_Type (aosp or neutron)"
+        required: true
+        default: "neutron"
+        type: choice
+        options:
+          - aosp
+          - neutron
+      clang_url:
+        description: "🔗 AOSP Clang URL (if using aosp)"
+        required: false
+        default: ""
+        type: string
+      config:
+        description: "📄 Device_Defconfig"
+        required: true
+        default: "vendor/obiwan_defconfig"
+        type: string
+      LocalVersion:
+        description: "📄 Set custom localversion"
+        required: false
+        type: string
+      cmd:
+        description: "📜 Extra_Make_cmd"
+        required: false
+        default: "-s"
+        type: string
+      import:
+        description: "Import configs into defconfig"
+        required: false
+        default: "CONFIG_KSU=y"
+        type: string
+      ksu:
+        description: "Import KernelSU"
+        required: false
+        type: Boolean
+        default: true
+
+env:
+  TZ: Asia/Kolkata
+  GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+  DEVICE: Obiwan
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions: write-all
+
+    steps:
+      - name: Install Build Dependencies
+        run: |
+          echo "🔧 Installing dependencies..."
+          sudo apt update > /dev/null 2>&1
+          sudo apt update -qq && sudo apt install -y git build-essential bc bison flex lzop zip unzip curl libssl-dev zlib1g-dev liblz4-tool device-tree-compiler python3 python-is-python3 wget
+
+      - name: Clone Kernel Source
+        env:
+           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+           git clone -b ${{ inputs.branch }} \
+           https://${{ inputs.user }}:${GITHUB_TOKEN}@github.com/${{ inputs.user }}/${{ inputs.repo }}.git --depth=1
+
+      - name: Set up Toolchain
+        run: |
+          echo "🧰 Setting up toolchain..."
+          TOOLCHAIN_DIR="$HOME/toolchains"
+          mkdir -p "$TOOLCHAIN_DIR"
+
+          if [[ "${{ inputs.clang_type }}" == "aosp" ]]; then
+            echo "Using AOSP Clang"
+            mkdir -p "$TOOLCHAIN_DIR/aosp-clang"
+            cd "$TOOLCHAIN_DIR/aosp-clang"
+            curl -L -s "${{ inputs.clang_url }}" -o clang.tar.gz && echo "✅ AOSP Clang downloaded"
+            tar -xzf clang.tar.gz && echo "✅ AOSP Clang extracted"
+            echo "TOOLCHAIN_PATH=$TOOLCHAIN_DIR/aosp-clang/bin" >> $GITHUB_ENV
+            echo "TOOLCHAIN_NAME=AOSP" >> $GITHUB_ENV
+          else
+            echo "Using Neutron Clang"
+            mkdir -p "$TOOLCHAIN_DIR/neutron-clang"
+            cd "$TOOLCHAIN_DIR/neutron-clang"
+            curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman" && echo "✅ antman downloaded"
+            chmod +x antman
+            ./antman -S && echo "✅ Neutron toolchain"
+            echo "TOOLCHAIN_PATH=$TOOLCHAIN_DIR/neutron-clang/bin" >> $GITHUB_ENV
+            echo "TOOLCHAIN_NAME=Neutron" >> $GITHUB_ENV
+          fi
+
+      - name: Set localversion into kernel config
+        working-directory: ${{ inputs.repo }}
+        run: |
+          echo "🔧 Setting localversion..."
+          if [[ ! -z "${{ inputs.LocalVersion }}" ]]; then
+            sed -i '\#CONFIG_LOCALVERSION#d' arch/arm64/configs/${{ inputs.config }} && echo "✅ Removed old CONFIG_LOCALVERSION"
+            echo >> arch/arm64/configs/${{ inputs.config }}
+            echo 'CONFIG_LOCALVERSION_AUTO=n' >> arch/arm64/configs/${{ inputs.config }}
+            echo 'CONFIG_LOCALVERSION="${{ inputs.LocalVersion }}"' >> arch/arm64/configs/${{ inputs.config }} && echo "✅ Set new localversion"
+          else
+            sed -i '\#CONFIG_LOCALVERSION#d' arch/arm64/configs/${{ inputs.config }}
+            echo 'CONFIG_LOCALVERSION_AUTO=n' >> arch/arm64/configs/${{ inputs.config }} && echo "✅ Disabled localversion auto"
+          fi
+
+      - name: Import configs into defconfig
+        working-directory: ${{ inputs.repo }}
+        run: |
+          echo '${{ inputs.import }}' >> arch/arm64/configs/${{ inputs.config }}
+
+      - name: Import KernelSU
+        working-directory: ${{ inputs.repo }}
+        run: |
+          if [[ "${{ inputs.ksu }}" == "true" ]]; then
+            curl -LSs "https://raw.githubusercontent.com/rsuntk/KernelSU/main/kernel/setup.sh" | bash -s main
+          fi
+
+      - name: Patch Source
+        working-directory: ${{ inputs.repo }}
+        run: |
+          if [[ "${{ inputs.ksu }}" == "true" ]]; then
+            wget https://raw.githubusercontent.com/SA9990/NonGKI_Kernel_Build_2nd/mainline/Patches/syscall_hook_patches.sh
+            chmod +x syscall_hook_patches.sh
+            bash syscall_hook_patches.sh
+          fi
+
+      - name: Configure and Build Kernel
+        working-directory: ${{ inputs.repo }}
+        run: |
+          echo "Building kernel..."
+          export PATH="${{ env.TOOLCHAIN_PATH }}:$PATH"
+          make distclean
+          git submodule update --init --recursive
+          git submodule status
+          make -j$(nproc --all) O=out ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 ${{ inputs.cmd }} ${{ inputs.config }}
+          make -j$(nproc --all) O=out ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 ${{ inputs.cmd }} all && echo "✅ Kernel compiled"
+
+      - name: Generate Defconfig
+        working-directory: ${{ inputs.repo }}
+        run: |
+          mv out/.config out/${{ env.DEVICE }}.txt && echo "✅ Saved defconfig"
+
+      - name: Merge DTBs
+        working-directory: ${{ inputs.repo }}
+        run: |
+          find out/arch/arm64/boot/dts/vendor -name '*.dtb' -exec cat {} + > out/arch/arm64/boot/dtb && echo "✅ DTBs merged"
+
+      - name: Set Build Timestamp
+        run: |
+          echo "IST_TIME=$(date +"%Y-%m-%d_%H-%M")" >> $GITHUB_ENV && echo "✅ Timestamp set"
+
+      - name: Package with AnyKernel3
+        run: |
+          echo "📦 Packaging with AnyKernel3..."
+          export TZ=Asia/Kolkata
+          IST_TIME=$(date +"%d-%m-%Y_%H-%M")
+          ZIP_NAME="${IST_TIME}.zip"
+          echo "$ZIP_NAME" > zip_name.txt
+
+          git clone https://github.com/SA9990/AK3_obiwan.git && echo "✅ Cloned AnyKernel3"
+          cp ${{ inputs.repo }}/out/arch/arm64/boot/Image AK3_obiwan/ && echo "✅ Copied Image"
+          cp ${{ inputs.repo }}/out/arch/arm64/boot/dtb AK3_obiwan/ && echo "✅ Copied DTB"
+          find ${{ inputs.repo }}/out/ -type f -name "*.ko" -exec cp {} AK3_obiwan/modules/system/lib/modules/ \; || true && echo "✅ Copied modules"
+          find ${{ inputs.repo }}/out/ -type f -name "dtbo.img" -exec cp {} AK3_obiwan/ \; || true
+          cd AK3_obiwan
+          zip -r9 "../$ZIP_NAME" * -x .git README.md *placeholder && echo "✅ AnyKernel3 packaged"
+
+
+
+      - name: Setup mkbootimg
+        working-directory: ${{ inputs.repo }}
+        run: |
+          git clone https://android.googlesource.com/platform/system/tools/mkbootimg tool -b master-kernel-build-2022 --depth=1
+          cd tool
+          curl -L -o source.img "https://github.com/SA9990/Payload_Dumper_lite/releases/download/payload/boot.img"
+          echo "FORMAT_MKBOOTING=$(python unpack_bootimg.py --boot_img=source.img --format=mkbootimg)" >> $GITHUB_ENV
+          python unpack_bootimg.py --boot_img source.img
+          cd ..
+          cp out/arch/arm64/boot/Image tool/out/kernel
+
+
+      - name: Create boot.img
+        working-directory: ${{ inputs.repo }}
+        run: |
+          cd tool
+          python mkbootimg.py ${{ env.FORMAT_MKBOOTING }} -o boot.img
+
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2.4.2
+        with:
+          tag_name: "${{ inputs.repo }}_${{ inputs.branch }}"
+          name: "${{ env.DEVICE }}_${{ env.IST_TIME }}"
+          body: |
+            - 🗓️ **Build Date:** `${{ env.IST_TIME }}`
+            - 📱 **Device:** `${{ env.DEVICE }}`
+            - 👤 **Maintainer:** `${{ inputs.user }}`
+            - 📁 **Repo:** `${{ inputs.repo }}`
+            - 🌿 **Branch:** `${{ inputs.branch }}`
+            - 🛠️ **Toolchain:** `${{ env.TOOLCHAIN_NAME }}`
+            - ⚙️ **Defconfig:** `${{ inputs.config }}`
+          files: |
+            ${{ github.workspace }}/*.zip
+            ${{ github.workspace }}/${{ inputs.repo }}/out/${{ env.DEVICE }}.txt
+            ${{ github.workspace }}/${{ inputs.repo }}/tool/boot.img
+            ${{ github.workspace }}/${{ inputs.repo }}/out/arch/arm64/boot/Image
