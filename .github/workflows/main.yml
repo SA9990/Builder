@@ -207,13 +207,13 @@ jobs:
           tag_name: "${{ inputs.repo }}_${{ inputs.branch }}"
           name: "${{ env.DEVICE }}_${{ env.IST_TIME }}"
           body: |
-            🗓️ build_date : ${{ env.IST_TIME }}
-            🌐 repo_owner : ${{ inputs.user }}
-            🌐 repository : ${{ inputs.repo }}
-            🌐 branch     : ${{ inputs.branch }}
-            📄 Defconfig  : ${{ inputs.config }}
-            🔧 Toolchain  : ${{ env.TOOLCHAIN_NAME }}
-            ⚠️ KernelSU   : ${{ env.KSU_GIT_VERSION }}
+            🗓️ Build_Date      : ${{ env.IST_TIME }}
+            🌐 Repo_Owner      : ${{ inputs.user }}
+            🌐 Repository      : ${{ inputs.repo }}
+            🌐 Branch          : ${{ inputs.branch }}
+            📄 Defconfig       : ${{ inputs.config }}
+            🔧 Toolchain       : ${{ env.TOOLCHAIN_NAME }}
+            ⚠️ KernelSU        : ${{ env.KSU_GIT_VERSION }}
           files: |
             ${{ github.workspace }}/*.zip
             ${{ github.workspace }}/${{ inputs.repo }}/out/${{ env.DEVICE }}.txt
