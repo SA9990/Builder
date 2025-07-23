@@ -167,8 +167,8 @@ jobs:
           echo "🧱 Building kernel..."
           export PATH="${{ env.TOOLCHAIN_PATH }}:$PATH"
           make distclean
-          make -j$(nproc --all) O=out ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 ${{ inputs.cmd }} ${{ inputs.config }}
-          make -j$(nproc --all) O=out ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 ${{ inputs.cmd }} all && echo "✅ Kernel compiled"
+          make -j$(nproc --all) O=out ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CLANG_TRIPLE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 ${{ inputs.cmd }} ${{ inputs.config }}
+          make -j$(nproc --all) O=out ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CLANG_TRIPLE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 ${{ inputs.cmd }} all && echo "✅ Kernel compiled"
 
       - name: Generate Defconfig
         working-directory: ${{ inputs.repo }}
