@@ -39,7 +39,6 @@ on:
       ksu:
         description: "⚠️ Integrate KernelSU"
         required: false
-        type: Boolean
         default: true
       LocalVersion:
         description: "📄 Set custom localversion"
@@ -104,7 +103,7 @@ jobs:
             cd "$TOOLCHAIN_DIR/neutron-clang"
             curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman" && echo "✅ antman downloaded"
             chmod +x antman
-            ./antman -S && echo "✅ Neutron toolchain installed"
+            ./antman -S && echo "✅ Neutron toolchain"
             echo "TOOLCHAIN_PATH=$TOOLCHAIN_DIR/neutron-clang/bin" >> $GITHUB_ENV
             echo "TOOLCHAIN_NAME=Neutron" >> $GITHUB_ENV
           fi
@@ -150,7 +149,7 @@ jobs:
             echo 'obj-$(CONFIG_KSU) += kernelsu/' >> drivers/Makefile
             echo 'CONFIG_KSU=y' >> arch/arm64/configs/${{ inputs.config }} && echo "✅ Enabled KSU in defconfig"
             rm -rf KernelSU p && echo "🧹 Cleaned up temporary files"
-            echo "✅ KernelSU integration completed."
+            echo "✅ KernelSU integrated"
           else
             echo "⚠️ Skipping KernelSU integration."
             rm -rf drivers/kernelsu
@@ -159,7 +158,7 @@ jobs:
             echo >> drivers/Kconfig
             echo 'endmenu' >> drivers/Kconfig
             sed -i '/obj-$(CONFIG_KSU) += kernelsu\//d' drivers/Makefile
-            echo "✅ Cleaned up KernelSU remnants"
+            echo "✅ Cleaned up KernelSU remnants (if any)"
           fi
 
       - name: Configure and Build Kernel
@@ -174,7 +173,7 @@ jobs:
       - name: Generate Defconfig
         working-directory: ${{ inputs.repo }}
         run: |
-          mv out/.config out/${{ env.DEVICE }}.txt && echo "✅ Saved defconfig output"
+          mv out/.config out/${{ env.DEVICE }}.txt && echo "✅ Saved defconfig"
 
       - name: Merge DTBs
         working-directory: ${{ inputs.repo }}
@@ -196,10 +195,10 @@ jobs:
           git clone https://github.com/SA9990/AK3_obiwan.git && echo "✅ Cloned AnyKernel3"
           cp ${{ inputs.repo }}/out/arch/arm64/boot/Image AK3_obiwan/ && echo "✅ Copied Image"
           cp ${{ inputs.repo }}/out/arch/arm64/boot/dtb AK3_obiwan/ && echo "✅ Copied DTB"
-          find ${{ inputs.repo }}/out/ -type f -name "*.ko" -exec cp {} AK3_obiwan/modules/system/lib/modules/ \; || true
-          find ${{ inputs.repo }}/out/ -type f -name "dtbo.img" -exec cp {} AK3_obiwan/ \; || true
+          find ${{ inputs.repo }}/out/ -type f -name "*.ko" -exec cp {} AK3_obiwan/modules/system/lib/modules/ \; || true && echo "✅ Copied modules"
+          find ${{ inputs.repo }}/out/ -type f -name "dtbo.img" -exec cp {} AK3_obiwan/ \; || true && echo "✅ Copied dtbo.img"
           cd AK3_obiwan
-          zip -r9 "../$ZIP_NAME" * -x .git README.md *placeholder && echo "✅ Zipped final package"
+          zip -r9 "../$ZIP_NAME" * -x .git README.md *placeholder && echo "✅ AnyKernel3 packaged"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2.3.2
