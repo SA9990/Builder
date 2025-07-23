@@ -135,11 +135,11 @@ jobs:
             mv KernelSU/kernel drivers/kernelsu && echo "✅ Moved kernel source to drivers/kernelsu"
             cd KernelSU
             export KSU_GIT_VERSION=$(git rev-list --count HEAD) && echo "✅ Fetched KernelSU version: $KSU_GIT_VERSION"
+            echo "KSU=$KSU_GIT_VERSION" >> $GITHUB_ENV
             cd ..
             sed -i '20,38d' drivers/kernelsu/Makefile && echo "✅ Cleaned old versioning lines"
             echo KSU_GIT_VERSION := $KSU_GIT_VERSION >> drivers/kernelsu/Makefile
             echo '$(eval KSU_VERSION=$(shell expr 10000 + $(KSU_GIT_VERSION) + 200))' >> drivers/kernelsu/Makefile
-            echo '$(eval KSU_VERSION=$(shell expr 10000 + $(KSU_GIT_VERSION) + 200))' >> $GITHUB_ENV
             echo 'ccflags-y += -DKSU_VERSION=$(KSU_VERSION)' >> drivers/kernelsu/Makefile
             echo '$(info -- KernelSU version: $(KSU_VERSION))' >> drivers/kernelsu/Makefile
             sed -i '\#endmenu#d' drivers/Kconfig && echo "✅ Modified Kconfig"
@@ -213,7 +213,7 @@ jobs:
             🌐     Branch      : ${{ inputs.branch }}
             📄  Defconfig      : ${{ inputs.config }}
             🔧  Toolchain      : ${{ env.TOOLCHAIN_NAME }}
-            ⚠️   KernelSU      : ${{ env.KSU_VERSION }}
+            ⚠️   KernelSU      : ${{ env.KSU }}
           files: |
             ${{ github.workspace }}/*.zip
             ${{ github.workspace }}/${{ inputs.repo }}/out/${{ env.DEVICE }}.txt
