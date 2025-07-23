@@ -117,7 +117,7 @@ jobs:
             sed -i '\#CONFIG_LOCALVERSION#d' arch/arm64/configs/${{ inputs.config }} && echo "✅ Removed old CONFIG_LOCALVERSION"
             echo >> arch/arm64/configs/${{ inputs.config }}
             echo 'CONFIG_LOCALVERSION_AUTO=n' >> arch/arm64/configs/${{ inputs.config }}
-            echo 'CONFIG_LOCALVERSION=${{ inputs.LocalVersion }}' >> arch/arm64/configs/${{ inputs.config }} && echo "✅ Set new localversion"
+            echo 'CONFIG_LOCALVERSION="${{ inputs.LocalVersion }}"' >> arch/arm64/configs/${{ inputs.config }} && echo "✅ Set new localversion"
           else
             sed -i '\#CONFIG_LOCALVERSION#d' arch/arm64/configs/${{ inputs.config }}
             echo 'CONFIG_LOCALVERSION_AUTO=n' >> arch/arm64/configs/${{ inputs.config }} && echo "✅ Disabled localversion auto"
