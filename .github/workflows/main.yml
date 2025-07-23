@@ -16,7 +16,7 @@ on:
       branch:
         description: "⚙️ Branch"
         required: true
-        default: "X"
+        default: "voyager_2"
         type: string
       clang_type:
         description: "🛠️ Clang_Type (aosp or neutron)"
@@ -138,6 +138,7 @@ jobs:
             cd ..
             sed -i '20,38d' drivers/kernelsu/Makefile && echo "✅ Cleaned old versioning lines"
             echo KSU_GIT_VERSION := $KSU_GIT_VERSION >> drivers/kernelsu/Makefile
+            echo KSU_GIT_VERSION := $KSU_GIT_VERSION >> $GITHUB_ENV
             echo '$(eval KSU_VERSION=$(shell expr 10000 + $(KSU_GIT_VERSION) + 200))' >> drivers/kernelsu/Makefile
             echo 'ccflags-y += -DKSU_VERSION=$(KSU_VERSION)' >> drivers/kernelsu/Makefile
             echo '$(info -- KernelSU version: $(KSU_VERSION))' >> drivers/kernelsu/Makefile
@@ -166,8 +167,8 @@ jobs:
         run: |
           echo "🧱 Building kernel..."
           export PATH="${{ env.TOOLCHAIN_PATH }}:$PATH"
-          make distclean && echo "✅ Cleaned previous build"
-          make -j$(nproc --all) O=out ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 ${{ inputs.cmd }} ${{ inputs.config }} && echo "✅ Config done"
+          make distclean
+          make -j$(nproc --all) O=out ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 ${{ inputs.cmd }} ${{ inputs.config }}
           make -j$(nproc --all) O=out ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 ${{ inputs.cmd }} all && echo "✅ Kernel compiled"
 
       - name: Generate Defconfig
@@ -212,6 +213,7 @@ jobs:
             🌐 branch     : ${{ inputs.branch }}
             📄 Defconfig  : ${{ inputs.config }}
             🔧 Toolchain  : ${{ env.TOOLCHAIN_NAME }}
+            ⚠️ KernelSU   : ${{ env.KSU_GIT_VERSION }}
           files: |
             ${{ github.workspace }}/*.zip
             ${{ github.workspace }}/${{ inputs.repo }}/out/${{ env.DEVICE }}.txt
