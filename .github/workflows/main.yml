@@ -196,7 +196,7 @@ jobs:
           cp ${{ inputs.repo }}/out/arch/arm64/boot/Image AK3_obiwan/ && echo "✅ Copied Image"
           cp ${{ inputs.repo }}/out/arch/arm64/boot/dtb AK3_obiwan/ && echo "✅ Copied DTB"
           find ${{ inputs.repo }}/out/ -type f -name "*.ko" -exec cp {} AK3_obiwan/modules/system/lib/modules/ \; || true && echo "✅ Copied modules"
-          find ${{ inputs.repo }}/out/ -type f -name "dtbo.img" -exec cp {} AK3_obiwan/ \; || true && echo "✅ Copied dtbo.img"
+          find ${{ inputs.repo }}/out/ -type f -name "dtbo.img" -exec cp {} AK3_obiwan/ \; || true
           cd AK3_obiwan
           zip -r9 "../$ZIP_NAME" * -x .git README.md *placeholder && echo "✅ AnyKernel3 packaged"
 
