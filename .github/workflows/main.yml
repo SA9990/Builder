@@ -117,7 +117,7 @@ jobs:
             sed -i '\#CONFIG_LOCALVERSION#d' arch/arm64/configs/${{ inputs.config }} && echo "✅ Removed old CONFIG_LOCALVERSION"
             echo >> arch/arm64/configs/${{ inputs.config }}
             echo 'CONFIG_LOCALVERSION_AUTO=n' >> arch/arm64/configs/${{ inputs.config }}
-            echo 'CONFIG_LOCALVERSION="${{ inputs.LocalVersion }}"' >> arch/arm64/configs/${{ inputs.config }} && echo "✅ Set new localversion"
+            echo 'CONFIG_LOCALVERSION=${{ inputs.LocalVersion }}' >> arch/arm64/configs/${{ inputs.config }} && echo "✅ Set new localversion"
           else
             sed -i '\#CONFIG_LOCALVERSION#d' arch/arm64/configs/${{ inputs.config }}
             echo 'CONFIG_LOCALVERSION_AUTO=n' >> arch/arm64/configs/${{ inputs.config }} && echo "✅ Disabled localversion auto"
@@ -138,8 +138,8 @@ jobs:
             cd ..
             sed -i '20,38d' drivers/kernelsu/Makefile && echo "✅ Cleaned old versioning lines"
             echo KSU_GIT_VERSION := $KSU_GIT_VERSION >> drivers/kernelsu/Makefile
-            echo KSU_GIT_VERSION := $KSU_GIT_VERSION >> $GITHUB_ENV
             echo '$(eval KSU_VERSION=$(shell expr 10000 + $(KSU_GIT_VERSION) + 200))' >> drivers/kernelsu/Makefile
+            echo '$(eval KSU_VERSION=$(shell expr 10000 + $(KSU_GIT_VERSION) + 200))' >> $GITHUB_ENV
             echo 'ccflags-y += -DKSU_VERSION=$(KSU_VERSION)' >> drivers/kernelsu/Makefile
             echo '$(info -- KernelSU version: $(KSU_VERSION))' >> drivers/kernelsu/Makefile
             sed -i '\#endmenu#d' drivers/Kconfig && echo "✅ Modified Kconfig"
@@ -210,10 +210,10 @@ jobs:
             🗓️ Build_Date      : ${{ env.IST_TIME }}
             🌐 Repo_Owner      : ${{ inputs.user }}
             🌐 Repository      : ${{ inputs.repo }}
-            🌐 Branch          : ${{ inputs.branch }}
-            📄 Defconfig       : ${{ inputs.config }}
-            🔧 Toolchain       : ${{ env.TOOLCHAIN_NAME }}
-            ⚠️ KernelSU        : ${{ env.KSU_GIT_VERSION }}
+            🌐     Branch      : ${{ inputs.branch }}
+            📄  Defconfig      : ${{ inputs.config }}
+            🔧  Toolchain      : ${{ env.TOOLCHAIN_NAME }}
+            ⚠️   KernelSU      : ${{ env.KSU_VERSION }}
           files: |
             ${{ github.workspace }}/*.zip
             ${{ github.workspace }}/${{ inputs.repo }}/out/${{ env.DEVICE }}.txt
