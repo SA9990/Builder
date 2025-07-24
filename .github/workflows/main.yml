@@ -134,7 +134,7 @@ jobs:
             mv KernelSU/kernel drivers/kernelsu && echo "✅ Moved kernel source to drivers/kernelsu"
             cd KernelSU
             export KSU_GIT_VERSION=$(git rev-list --count HEAD) && echo "✅ Fetched KernelSU version: $KSU_GIT_VERSION"
-            echo "KSU=$KSU_GIT_VERSION" >> $GITHUB_ENV
+            echo "KSU=$((KSU_GIT_VERSION + 10200))" >> $GITHUB_ENV
             cd ..
             sed -i '20,38d' drivers/kernelsu/Makefile && echo "✅ Cleaned old versioning lines"
             echo KSU_GIT_VERSION := $KSU_GIT_VERSION >> drivers/kernelsu/Makefile
