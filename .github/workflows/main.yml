@@ -90,7 +90,7 @@ jobs:
             echo "Using AOSP Clang"
             mkdir -p "$TOOLCHAIN_DIR/aosp-clang"
             cd "$TOOLCHAIN_DIR/aosp-clang"
-            curl -L "${{ inputs.clang_url }}" -o clang.tar.gz && echo "✅ AOSP Clang downloaded"
+            curl -L -s "${{ inputs.clang_url }}" -o clang.tar.gz && echo "✅ AOSP Clang downloaded"
             tar -xzf clang.tar.gz && echo "✅ AOSP Clang extracted"
             echo "TOOLCHAIN_PATH=$TOOLCHAIN_DIR/aosp-clang/bin" >> $GITHUB_ENV
             echo "TOOLCHAIN_NAME=AOSP" >> $GITHUB_ENV
