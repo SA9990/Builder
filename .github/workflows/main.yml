@@ -72,7 +72,7 @@ jobs:
           sudo apt install -y git ccache automake flex lzop bison gperf build-essential zip curl zlib1g-dev libxml2-utils bzip2 libbz2-dev libbz2-1.0 libghc-bzlib-dev squashfs-tools pngcrush schedtool dpkg-dev liblz4-tool make optipng maven libssl-dev pwgen libswitch-perl policycoreutils minicom libxml-sax-base-perl libxml-simple-perl bc libx11-dev libgl1-mesa-dev xsltproc unzip device-tree-compiler python3 aria2 > /dev/null 2>&1 && echo "✅ Dependencies installed"
 
       - name: Checkout Kernel Source
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v5.0.0
         with:
           token: ${{ secrets.GH_PAT }}
           repository: ${{ inputs.user }}/${{ inputs.repo }}
