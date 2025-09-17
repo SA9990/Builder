@@ -11,12 +11,12 @@ on:
       repo:
         description: "🏠 Repository"
         required: true
-        default: "z"
+        default: "Source"
         type: string
       branch:
         description: "⚙️ Branch"
         required: true
-        default: "x"
+        default: "voyager_2"
         type: string
       clang_type:
         description: "🛠️ Clang_Type (aosp or neutron)"
@@ -58,7 +58,7 @@ on:
         required: false
         default: ""
         type: string
-        
+
 env:
   TZ: Asia/Kolkata
   GITHUB_TOKEN: ${{ secrets.GH_PAT }}
