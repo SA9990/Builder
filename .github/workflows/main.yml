@@ -11,12 +11,12 @@ on:
       repo:
         description: "🏠 Repository"
         required: true
-        default: "Source"
+        default: "z"
         type: string
       branch:
         description: "⚙️ Branch"
         required: true
-        default: "voyager_2"
+        default: "xx"
         type: string
       clang_type:
         description: "🛠️ Clang_Type (aosp or neutron)"
