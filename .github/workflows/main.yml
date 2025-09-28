@@ -11,17 +11,17 @@ on:
       repo:
         description: "🏠 Repository"
         required: true
-        default: "z"
+        default: "Source"
         type: string
       branch:
         description: "⚙️ Branch"
         required: true
-        default: "main"
+        default: "waterlily-staging"
         type: string
       clang_type:
         description: "🛠️ Clang_Type (aosp or neutron)"
         required: true
-        default: "neutron"
+        default: "aosp"
         type: choice
         options:
           - aosp
@@ -29,7 +29,7 @@ on:
       clang_url:
         description: "🔗 AOSP Clang URL (if using aosp)"
         required: false
-        default: ""
+        default: "https://github.com/SA9990/Toolchain/releases/download/toolchain/clang-r530567.tar.gz"
         type: string
       config:
         description: "📄 Device_Defconfig"
