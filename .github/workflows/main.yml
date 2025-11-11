@@ -16,7 +16,7 @@ on:
       branch:
         description: "⚙️ Branch"
         required: true
-        default: "y"
+        default: "x"
         type: string
       clang_type:
         description: "🛠️ Clang_Type (aosp or neutron)"
@@ -46,15 +46,15 @@ on:
         default: "-s"
         type: string
       import:
-        description: "Import configs into defconfig"
+        description: "Append configs like CONFIG_KSU=y"
         required: false
-        default: "CONFIG_KSU=y"
+        default: ""
         type: string
       ksu:
         description: "Import KernelSU"
         required: false
         type: Boolean
-        default: true
+        default: false
 
 env:
   TZ: Asia/Kolkata
