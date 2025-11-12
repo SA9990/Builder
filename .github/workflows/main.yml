@@ -193,6 +193,7 @@ jobs:
           python unpack_bootimg.py --boot_img source.img
           cd ..
           cp out/arch/arm64/boot/Image tool/out/kernel
+          cp out/arch/arm64/boot/dtb tool/out/dtb
 
 
       - name: Create boot.img
