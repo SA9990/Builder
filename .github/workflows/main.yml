@@ -200,7 +200,7 @@ jobs:
         working-directory: ${{ inputs.repo }}
         run: |
           cd tool
-          python mkbootimg.py ${{ env.FORMAT_MKBOOTING }} -o boot.img
+          python mkbootimg.py ${{ env.FORMAT_MKBOOTING }} -o boot_${{ env.IST_TIME }}.img
 
 
       - name: Create GitHub Release
