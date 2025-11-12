@@ -219,5 +219,5 @@ jobs:
           files: |
             ${{ github.workspace }}/*.zip
             ${{ github.workspace }}/${{ inputs.repo }}/out/${{ env.DEVICE }}.txt
-            ${{ github.workspace }}/${{ inputs.repo }}/tool/boot.img
+            ${{ github.workspace }}/${{ inputs.repo }}/tool/boot_${{ env.IST_TIME }}.img
             ${{ github.workspace }}/${{ inputs.repo }}/out/arch/arm64/boot/Image
