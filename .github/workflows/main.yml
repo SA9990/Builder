@@ -28,8 +28,8 @@ on:
           - neutron
       clang_url:
         description: "🔗 AOSP Clang URL (if using aosp)"
-        required: false
-        default: ""
+        required: true
+        default: "https://github.com/SA9990/Toolchain/releases/download/clang-r450784e/clang-r450784e.tar.gz"
         type: string
       config:
         description: "📄 Device_Defconfig"
