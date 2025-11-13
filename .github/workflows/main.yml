@@ -71,7 +71,7 @@ jobs:
       - name: Install Build Dependencies
         run: |
           echo "🔧 Installing dependencies..."
-          sudo apt update > /dev/null 2>&1
+          sudo apt update -qq
           sudo apt update -qq && sudo apt install -y git build-essential bc bison flex lzop zip unzip curl libssl-dev zlib1g-dev liblz4-tool device-tree-compiler python3 python-is-python3 wget
 
       - name: Clone Kernel Source
@@ -109,6 +109,7 @@ jobs:
           if [[ "${{ inputs.clang_type }}" == "proton" ]]; then
             echo "Using proton Clang"
             mkdir -p "$TOOLCHAIN_DIR/proton"
+            cd "$TOOLCHAIN_DIR/proton"
             git clone -b master --depth=1 https://github.com/kdrag0n/proton-clang.git
             echo "TOOLCHAIN_PATH=$TOOLCHAIN_DIR/proton/bin" >> $GITHUB_ENV
             echo "TOOLCHAIN_NAME=proton" >> $GITHUB_ENV
