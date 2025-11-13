@@ -26,6 +26,7 @@ on:
         options:
           - aosp
           - neutron
+          - proton
       clang_url:
         description: "🔗 AOSP Clang URL (if using aosp)"
         required: false
@@ -94,7 +95,8 @@ jobs:
             tar -xzf clang.tar.gz && echo "✅ AOSP Clang extracted"
             echo "TOOLCHAIN_PATH=$TOOLCHAIN_DIR/aosp-clang/bin" >> $GITHUB_ENV
             echo "TOOLCHAIN_NAME=AOSP" >> $GITHUB_ENV
-          else
+          fi
+          if [[ "${{ inputs.clang_type }}" == "neutron" ]]; then
             echo "Using Neutron Clang"
             mkdir -p "$TOOLCHAIN_DIR/neutron-clang"
             cd "$TOOLCHAIN_DIR/neutron-clang"
@@ -103,6 +105,13 @@ jobs:
             ./antman -S && echo "✅ Neutron toolchain"
             echo "TOOLCHAIN_PATH=$TOOLCHAIN_DIR/neutron-clang/bin" >> $GITHUB_ENV
             echo "TOOLCHAIN_NAME=Neutron" >> $GITHUB_ENV
+          fi
+          if [[ "${{ inputs.clang_type }}" == "proton" ]]; then
+            echo "Using proton Clang"
+            mkdir -p "$TOOLCHAIN_DIR/proton"
+            git clone -b master --depth=1 https://github.com/kdrag0n/proton-clang.git
+            echo "TOOLCHAIN_PATH=$TOOLCHAIN_DIR/proton/bin" >> $GITHUB_ENV
+            echo "TOOLCHAIN_NAME=proton" >> $GITHUB_ENV
           fi
 
       - name: Set localversion into kernel config
