@@ -21,14 +21,14 @@ on:
       clang_type:
         description: "🛠️ Clang_Type (aosp or neutron)"
         required: true
-        default: "neutron"
+        default: "aosp"
         type: choice
         options:
           - aosp
           - neutron
       clang_url:
         description: "🔗 AOSP Clang URL (if using aosp)"
-        required: true
+        required: false
         default: "https://github.com/SA9990/Toolchain/releases/download/clang-r450784e/clang-r450784e.tar.gz"
         type: string
       config:
