@@ -198,7 +198,7 @@ jobs:
         run: |
           git clone https://github.com/SA9990/mkbootimg.git --depth=1 tool
           cd tool
-          curl -L -o source.img "https://github.com/SA9990/Payload_Dumper_lite/releases/download/payload/boot.img"
+          curl -L -o source.img "https://sourceforge.net/projects/payload/files/cr_boot.img"
           echo "FORMAT_MKBOOTING=$(python unpack_bootimg.py --boot_img=source.img --format=mkbootimg)" >> $GITHUB_ENV
           python unpack_bootimg.py --boot_img source.img
           cd ..
