@@ -34,7 +34,7 @@ on:
       config:
         description: "📄 Device_Defconfig"
         required: true
-        default: "vendor/obiwan_defconfig"
+        default: "vendor/kona-perf_defconfig"
         type: string
       LocalVersion:
         description: "📄 Set custom localversion"
@@ -145,7 +145,7 @@ jobs:
           make distclean
           git submodule update --init --recursive
           git submodule status
-          make -j$(nproc --all) O=out ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 ${{ inputs.cmd }} ${{ inputs.config }}
+          make -j$(nproc --all) O=out ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 vendor/debugfs.config vendor/asus/obiwan.config ${{ inputs.cmd }} ${{ inputs.config }}
           make -j$(nproc --all) O=out ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 ${{ inputs.cmd }} all
       - name: Generate Defconfig
         working-directory: ${{ inputs.repo }}
