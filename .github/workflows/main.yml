@@ -29,7 +29,7 @@ on:
       clang_url:
         description: "🔗 AOSP Clang URL (if using aosp)"
         required: false
-        default: "https://github.com/SA9990/Toolchain/releases/download/clang-r450784e/clang-r450784e.tar.gz"
+        default: "https://github.com/SA9990/Toolchain/releases/download/clang-r536225/clang-r536225.tar.gz"
         type: string
       config:
         description: "📄 Device_Defconfig"
