@@ -133,7 +133,7 @@ jobs:
         working-directory: ${{ inputs.repo }}
         run: |
           if [[ "${{ inputs.ksu }}" == "true" ]]; then
-            wget https://raw.githubusercontent.com/SA9990/NonGKI_Kernel_Build_2nd/mainline/Patches/syscall_hook_patches.sh
+            wget https://raw.githubusercontent.com/SA9990/KernelSU_Patch/refs/heads/x/syscall_hook_patches.sh
             chmod +x syscall_hook_patches.sh
             bash syscall_hook_patches.sh
           fi
