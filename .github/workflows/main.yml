@@ -127,7 +127,7 @@ jobs:
         working-directory: ${{ inputs.repo }}
         run: |
           if [[ "${{ inputs.ksu }}" == "true" ]]; then
-            curl -LSs "https://raw.githubusercontent.com/rsuntk/KernelSU/main/kernel/setup.sh" | bash -s main
+            curl -LSs "https://raw.githubusercontent.com/backslashxx/KernelSU/refs/heads/master/kernel/setup.sh" | bash -s master
           fi
       - name: Patch Source
         working-directory: ${{ inputs.repo }}
